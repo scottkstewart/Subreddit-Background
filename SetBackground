@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+import sys
+import os
+import requests
+import urllib
+import random
+import time
+from bs4 import BeautifulSoup
+
+if __name__ == "__main__":
+    urls = []
+    while len(urls) == 0:
+        for subreddit in sys.argv[1:]:
+            page = BeautifulSoup(requests.get('http://www.reddit.com/r/' + subreddit).text, 'lxml')
+            posts = page.findAll('div', {'data-domain':'imgur.com'})
+            urls.extend([p['data-url'] for p in posts])
+            
+        if(len(urls) == 0):
+            print("URLs not found. Retrying in 20 seconds. If repeated, consider typos or bad connection.")
+            print(page)
+            time.sleep(20)
+
+    imgurPage = BeautifulSoup(requests.get(urls[random.randint(0, len(urls)-1)]).text, 'lxml')
+    imgUrl = 'http:' + imgurPage.find('img')['src']
+
+    with open('Back.jpg', 'wb') as f:
+        image = urllib.request.urlopen(imgUrl)
+        f.write(image.read())
+
+    os.system("feh --bg-scale Back.jpg")
