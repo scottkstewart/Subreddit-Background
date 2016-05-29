@@ -9,22 +9,32 @@ from bs4 import BeautifulSoup
 
 if __name__ == "__main__":
     urls = []
+
+    # continue to iterate through subreddits until urls are found
     while len(urls) == 0:
+        # iterate through subreddits, adding all imgur posts to a list of URLS
         for subreddit in sys.argv[1:]:
-            page = BeautifulSoup(requests.get('http://www.reddit.com/r/' + subreddit).text, 'lxml')
+            page = BeautifulSoup(requests.get('http://www.reddit.com/r/{}'.format(subreddit)).text, 'lxml')
             posts = page.findAll('div', {'data-domain':'imgur.com'})
             urls.extend([p['data-url'] for p in posts])
             
-        if(len(urls) == 0):
+        # if there are no urls, sleep, printing the page if it was correctly connected (i.e. if reddit blocked the request)
+        if len(urls) == 0:
             print("URLs not found. Retrying in 20 seconds. If repeated, consider typos or bad connection.")
-            print(page)
+            if page is not None:
+                print(page)
+            
             time.sleep(20)
 
+    # get the link to the image from the imgur page
     imgurPage = BeautifulSoup(requests.get(urls[random.randint(0, len(urls)-1)]).text, 'lxml')
     imgUrl = 'http:' + imgurPage.find('img')['src']
 
+    # save the image in current directory as 'Back.jpg'
     with open('Back.jpg', 'wb') as f:
         image = urllib.request.urlopen(imgUrl)
         f.write(image.read())
 
+    # set the background and delete the saved image.
     os.system("feh --bg-scale Back.jpg")
+    os.remove('Back.jpg')
